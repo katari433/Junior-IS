@@ -1,2 +1,2 @@
-# Juniro-IS
+# Junior-IS
 My Junior IS
