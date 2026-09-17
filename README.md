@@ -12,12 +12,12 @@
 | Account page | October 2, 2026 | 0.5 hours |
 | Send money page | October 5, 2026 | 0.5 hours |
 | Transfer validation | October 7, 2026 | 1 hour |
-| Reliable transfer processing | October 9, 2026 | 1 hour |
+| Reliable transfer processing | October 8, 2026 | 1 hour |
 | Transaction history | October 12, 2026 | 1 hour |
-| Audit logging | October 16, 2026 | 3 hours |
+| Audit logging | October 12, 2026 | 3 hours |
 | Fraud detection rules | October 23, 2026 | 5 hours |
-| Fraud review page | October 30, 2026 | 5 hours |
-| Application testing | November 2, 2026 | 1 hour |
+| Fraud review page | October 18, 2026 | 5 hours |
+| Application testing | October 22, 2026 | 1 hour |
 | Two-factor authentication *(Stretch Goal)* | if time permits | 0.5 hours |
 | Temporary account lockout *(Stretch Goal)* | if time permits | 2 hours |
 | Fraud-alert notifications *(Stretch Goal)* | if time permits | 0.5 hours|
