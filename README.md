@@ -1,6 +1,4 @@
 # Feature Calendar
-
-```markdown
 | Feature / Task | Due Date | Notes |
 |---|---|---|
 | Create user database | September 29, 2026 | 0.5 hours |
