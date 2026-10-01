@@ -7,7 +7,8 @@ CREATE TABLE users (
 );
 
 CREATE TABLE accounts (
-    account_num INT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    account_num CHAR(10) NOT NULL UNIQUE,
     user_id INT NOT NULL,
     account_name VARCHAR(500) NOT NULL,
     balance DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
