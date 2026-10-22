@@ -8,7 +8,42 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [screen, setScreen] = useState<'register' | 'login' | 'home'>('register');
+  const [loggedInUserId, setLoggedInUserId] = useState<number | null>(null);
+  const [loggedInFirstName, setLoggedInFirstName] = useState('');
+  const [accounts, setAccounts] = useState<any[]>([]);
+  
+  async function displayAccounts(userId: number) {
+  
+    try{
+        const response = await fetch('http://localhost:8000/findAccount', {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+      }),
+    });
 
+
+  const data = await response.json();
+
+
+
+setAccounts(data.accounts ?? []);
+ 
+  
+}catch (error) {
+    console.log(error);
+    Alert.alert('Error', 'Could not connect to the backend.');
+  }
+
+
+}
+
+async function handleCreateNewAccount() {
+  
+}
 
   async function handleCreateAccount() {
   if (
@@ -81,8 +116,11 @@ if(
   Alert.alert('Error', data.detail);
   return;
   }
-
+  setLoggedInUserId(data.user_id);
+  setLoggedInFirstName(data.first_name)
+  await displayAccounts(data.user_id);
   setScreen('home');
+
  }
  catch (error) {
     console.log(error);
@@ -160,15 +198,39 @@ if(
   );
 }
 
-else if(screen === 'home'){
-  return (
-    <View style={styles.container}>
-      <Text>DASHBOARD</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+else if (screen === 'home') {
+  if (accounts.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text>Welcome, {loggedInFirstName}</Text>
+        <Text>You have no bank accounts, create one now.</Text>
 
+        <Button
+          title="Create New Account"
+          onPress={handleCreateNewAccount}
+        />
+
+        <StatusBar style="auto" />
+      </View>
+    );
+  }
+
+  return (
+  <View style={styles.container}>
+    <Text>Welcome, {loggedInFirstName}</Text>
+
+    {accounts.map((account: any) => (
+      <View key={account.id}>
+        <Text>{account.account_name}</Text>
+        <Text>Account Number: {account.account_num}</Text>
+        <Text>Balance: ${account.balance}</Text>
+      </View>
+    ))}
+
+    <StatusBar style="auto" />
+  </View>
+);
+}
 
 }
 
@@ -180,3 +242,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+

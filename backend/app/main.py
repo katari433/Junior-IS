@@ -19,6 +19,9 @@ class LoginRequest (BaseModel):
     email: str
     password: str
 
+class AccountRequest (BaseModel):
+    user_id: int
+    
 @app.get("/")
 def root():
     return {"message": "Banking backend is running"}
@@ -116,4 +119,32 @@ def login_user(request: LoginRequest):
 
             }
 
+@app.post("/findAccount")
+def find_user_account(request: AccountRequest):
+    with engine.connect() as connection:
+            result = connection.execute(
+
+                text("""
+                SELECT id, account_num, user_id, account_name, balance
+                FROM accounts
+                WHERE user_id = :user_id
+                            
+                """),
+                                {
+                "user_id": request.user_id
+               }
+             
+            )
+            accounts = result.mappings().all()
+
+            if not accounts:
+                return{
+                   "message": "no accounts", 
+                   "accounts": []
+                }
+        
+            return {
+                "accounts": accounts
+
+            }
 
