@@ -27,3 +27,11 @@ VALUES (
     'Checking',
     1500.00
 );
+
+INSERT INTO accounts (account_num, user_id, account_name, balance)
+VALUES (
+    '8416302764',
+    (SELECT id FROM users WHERE email = 'tim1@gmail.com'),
+    'Checking',
+    10500.00
+);

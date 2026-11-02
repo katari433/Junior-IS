@@ -3,12 +3,15 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from pwdlib import PasswordHash
+import random
 
 from .database import engine
 
 
 app = FastAPI()
 password_hash = PasswordHash.recommended()
+
+
 class RegistrationRequest(BaseModel):
     first_name: str
     last_name: str
@@ -21,7 +24,11 @@ class LoginRequest (BaseModel):
 
 class AccountRequest (BaseModel):
     user_id: int
-    
+
+class CreateAccountRequest(BaseModel):
+    user_id: int
+    account_name: str
+
 @app.get("/")
 def root():
     return {"message": "Banking backend is running"}
@@ -148,3 +155,34 @@ def find_user_account(request: AccountRequest):
 
             }
 
+@app.post("/createAccount")
+def create_user_account(request: CreateAccountRequest):
+    account_num = str(random.randint(1000000000, 9999999999))
+    with engine.begin() as connection:
+            result = connection.execute(
+            text("""
+                INSERT INTO accounts (
+                    account_num,
+                    user_id,
+                    account_name,
+                    balance
+                )
+                VALUES (
+                    :account_num,
+                    :user_id,
+                    :account_name,
+                    :balance
+                )
+            """),    
+            {
+            "account_num": account_num,
+            "user_id": request.user_id,
+            "account_name": request.account_name,
+            "balance": 0.00
+            }
+            )
+        
+            return {
+               "message": "Account created successfully" 
+            }
+            
