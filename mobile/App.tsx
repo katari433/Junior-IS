@@ -28,7 +28,11 @@ export default function App() {
 
   const data = await response.json();
 
-
+if (!response.ok) {
+  
+  Alert.alert('Error', 'Could not load accounts.');
+  return;
+}
 
 setAccounts(data.accounts ?? []);
  
@@ -41,8 +45,33 @@ setAccounts(data.accounts ?? []);
 
 }
 
-async function handleCreateNewAccount() {
-  
+async function handleCreateNewAccount(accountName: string) {
+  try {
+    const response = await fetch('http://localhost:8000/createAccount', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: loggedInUserId,
+        account_name: accountName,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      Alert.alert('Error', data.detail);
+      return;
+    }
+
+    await displayAccounts(loggedInUserId!);
+
+    Alert.alert('Success', data.message);
+  } catch (error) {
+    console.log(error);
+    Alert.alert('Error', 'Could not create account.');
+  }
 }
 
   async function handleCreateAccount() {
@@ -206,8 +235,13 @@ else if (screen === 'home') {
         <Text>You have no bank accounts, create one now.</Text>
 
         <Button
-          title="Create New Account"
-          onPress={handleCreateNewAccount}
+          title="Open Checking Account"
+          onPress={() => handleCreateNewAccount('Checking')}
+        />
+
+        <Button
+          title="Open Savings Account"
+          onPress={() => handleCreateNewAccount('Savings')}
         />
 
         <StatusBar style="auto" />
