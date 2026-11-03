@@ -199,6 +199,19 @@ def send_money(request: TransferRequest):
             status_code=400,
             detail="Amount must be greater than zero"
         )
+
+        if len(request.recipient_account_num) != 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Account number must be 10 digits"
+            )
+        
+        if not request.recipient_account_num.isdigit():
+            raise HTTPException(
+                status_code=400,
+                detail="Account number must contain only numbers"
+                )
+        
         with engine.begin() as connection:
             result = connection.execute(
                 text("""
@@ -227,6 +240,10 @@ def send_money(request: TransferRequest):
                     status_code=404,
                     detail="Sender account not found"
                 )
+
+            
+
+            
             if sender["balance"] < request.amount:
                 raise HTTPException(
                     status_code=400,

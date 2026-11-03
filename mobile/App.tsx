@@ -14,7 +14,9 @@ export default function App() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [recipientAccount, setRecipientAccount] = useState('');
-  const [sendingAmount, setSendingAmount] = useState('');
+  const [sendingAmount, setSendingAmount] = useState('0.00');
+  const [amountDigits, setAmountDigits] = useState('');
+  const formattedAmount = (Number(amountDigits || '0') / 100).toFixed(2);
 
   
   async function displayAccounts(userId: number) {
@@ -173,6 +175,36 @@ async function handleTransfer() {
     return;
   }
 
+  if (recipientAccount.length !== 10) {
+    Alert.alert('Error', 'Account number must be 10 digits.');
+    return;
+  }
+
+  if (!/^\d+$/.test(recipientAccount)) {
+    Alert.alert('Error', 'Account number must contain only numbers.');
+    return;
+  }
+
+  if (recipientAccount === selectedAccount.account_num) {
+    Alert.alert('Error', 'Cannot send money to the same account.');
+    return;
+  }
+
+  if (isNaN(Number(sendingAmount))) {
+    Alert.alert('Error', 'Please enter a valid amount.');
+    return;
+  }
+
+  if (Number(sendingAmount) <= 0) {
+    Alert.alert('Error', 'Amount must be greater than zero.');
+    return;
+  }
+
+  if (Number(sendingAmount) > Number(selectedAccount.balance)) {
+    Alert.alert('Error', 'Insufficient funds.');
+    return;
+  }
+
   try {
     const response = await fetch('http://localhost:8000/sendMoney', {
       method: 'POST',
@@ -193,7 +225,7 @@ async function handleTransfer() {
       return;
     }
     setRecipientAccount('');
-    setSendingAmount('');
+    setSendingAmount('0.00');
 
     await displayAccounts(loggedInUserId!);
 
@@ -368,10 +400,12 @@ else if (screen === 'sendMoney' && selectedAccount) {
       />
 
       <TextInput
-        placeholder="Enter Amount"
         value={sendingAmount}
-        onChangeText={setSendingAmount}
-        keyboardType="decimal-pad"
+        onChangeText={(text) => {
+        const digitsOnly = text.replace(/\D/g, '');
+          setSendingAmount((Number(digitsOnly) / 100).toFixed(2));
+      }}
+      keyboardType="number-pad"
       />
 
       <Button
