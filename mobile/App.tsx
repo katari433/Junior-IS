@@ -8,11 +8,14 @@ export default function App() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account'>('register');
+  const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account' | 'sendMoney'>('register');
   const [loggedInUserId, setLoggedInUserId] = useState<number | null>(null);
   const [loggedInFirstName, setLoggedInFirstName] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
+  const [recipientAccount, setRecipientAccount] = useState('');
+  const [sendingAmount, setSendingAmount] = useState('');
+
   
   async function displayAccounts(userId: number) {
   
@@ -76,7 +79,7 @@ async function handleCreateNewAccount(accountName: string) {
   }
 }
 
-  async function handleCreateAccount() {
+async function handleCreateAccount() {
   if (
     firstName.trim() === '' ||
     lastName.trim() === '' ||
@@ -85,7 +88,7 @@ async function handleCreateNewAccount(accountName: string) {
   ) {
     Alert.alert('Error', 'Please fill in all fields.');
     return;
-  }
+ }
 
   try {
     const response = await fetch('http://localhost:8000/register', {
@@ -159,6 +162,48 @@ if(
   }
 
 
+}
+
+async function handleTransfer() {
+  if (
+    recipientAccount.trim() === '' ||
+    sendingAmount.trim() === ''
+  ) {
+    Alert.alert('Error', 'Please fill in all fields.');
+    return;
+  }
+
+  try {
+    const response = await fetch('http://localhost:8000/sendMoney', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender_account_id: selectedAccount.id,
+        recipient_account_num: recipientAccount,
+        amount: Number(sendingAmount)
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      Alert.alert('Error', data.detail);
+      return;
+    }
+    setRecipientAccount('');
+    setSendingAmount('');
+
+    await displayAccounts(loggedInUserId!);
+
+    setScreen('home');
+
+    Alert.alert('Success', data.message);
+  } catch (error) {
+    console.log(error);
+    Alert.alert('Error', 'Could not send money.');
+  }
 }
 
 
@@ -290,7 +335,7 @@ else if (screen === 'account' && selectedAccount) {
 
       <Button
       title="Send Money"
-      onPress={() => {}}
+      onPress={() => setScreen('sendMoney')}
       />
 
       <Button
@@ -301,6 +346,42 @@ else if (screen === 'account' && selectedAccount) {
       <Button
         title="Back"
         onPress={() => setScreen('home')}
+      />
+
+      <StatusBar style="auto" />
+    </View>
+  );
+}
+
+else if (screen === 'sendMoney' && selectedAccount) {
+  return (
+    <View style={styles.container}>
+      <Text>Send Money</Text>
+      <Text>From: {selectedAccount.account_name}</Text>
+      <Text>Balance: ${selectedAccount.balance}</Text>
+      <Text>Reciepient Account Number:</Text>
+      <TextInput
+        placeholder="Recipient Account Number"
+        value={recipientAccount}
+        onChangeText={setRecipientAccount}
+        keyboardType="number-pad"
+      />
+
+      <TextInput
+        placeholder="Enter Amount"
+        value={sendingAmount}
+        onChangeText={setSendingAmount}
+        keyboardType="decimal-pad"
+      />
+
+      <Button
+        title="Send"
+        onPress={handleTransfer}
+      />
+
+      <Button
+        title="Back"
+        onPress={() => setScreen('account')}
       />
 
       <StatusBar style="auto" />

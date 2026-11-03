@@ -4,6 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from pwdlib import PasswordHash
 import random
+from decimal import Decimal
 
 from .database import engine
 
@@ -28,6 +29,11 @@ class AccountRequest (BaseModel):
 class CreateAccountRequest(BaseModel):
     user_id: int
     account_name: str
+
+class TransferRequest(BaseModel):
+    sender_account_id: int
+    recipient_account_num: str
+    amount: Decimal
 
 @app.get("/")
 def root():
@@ -185,4 +191,82 @@ def create_user_account(request: CreateAccountRequest):
             return {
                "message": "Account created successfully" 
             }
-            
+
+@app.post("/sendMoney")
+def send_money(request: TransferRequest):
+        if request.amount <= 0:
+            raise HTTPException(
+            status_code=400,
+            detail="Amount must be greater than zero"
+        )
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                SELECT id, balance
+                FROM accounts
+                WHERE id = :id
+                """),
+                {
+                "id": request.sender_account_id
+                }      
+            )
+            recipient_result = connection.execute(
+            text("""
+            SELECT id, balance
+            FROM accounts
+            WHERE account_num = :account_num
+            """),
+            {
+                "account_num": request.recipient_account_num
+            }
+            )
+
+            sender = result.mappings().first()
+            if sender is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Sender account not found"
+                )
+            if sender["balance"] < request.amount:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Insufficient funds"
+                )
+        
+            recipient = recipient_result.mappings().first()
+            if sender["id"] == recipient["id"]:
+                raise HTTPException(
+                status_code=400,
+                detail="Cannot send money to the same account"
+                )
+
+            connection.execute(
+            text("""
+            UPDATE accounts
+            SET balance = balance - :amount
+            WHERE id = :id
+            """),
+            {
+            "amount": request.amount,
+            "id": sender["id"]
+            }
+            )
+
+            connection.execute(
+                    text("""
+                    UPDATE accounts
+                    SET balance = balance + :amount
+                    WHERE account_num = :account_num
+                    """),
+                {
+                "account_num": request.recipient_account_num,
+                "amount": request.amount
+                }
+            )
+
+            return {
+            "message": "Transfer successful"
+            }
+
+    
+           

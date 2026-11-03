@@ -35,3 +35,7 @@ VALUES (
     'Checking',
     10500.00
 );
+
+UPDATE accounts
+SET balance = 1000.00
+WHERE account_num = '1464955414';
