@@ -1,16 +1,18 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, Button, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Button, Alert, Pressable } from 'react-native';
 import { useState } from 'react';
+
 
 export default function App() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [screen, setScreen] = useState<'register' | 'login' | 'home'>('register');
+  const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account'>('register');
   const [loggedInUserId, setLoggedInUserId] = useState<number | null>(null);
   const [loggedInFirstName, setLoggedInFirstName] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
   
   async function displayAccounts(userId: number) {
   
@@ -250,20 +252,60 @@ else if (screen === 'home') {
   }
 
   return (
-  <View style={styles.container}>
+    <View style={styles.container}>
     <Text>Welcome, {loggedInFirstName}</Text>
 
     {accounts.map((account: any) => (
-      <View key={account.id}>
-        <Text>{account.account_name}</Text>
-        <Text>Account Number: {account.account_num}</Text>
-        <Text>Balance: ${account.balance}</Text>
-      </View>
-    ))}
+    <Pressable
+      key={account.id}
+      onPress={() => {
+        setSelectedAccount(account);
+        setScreen('account');
+      }}
+    >
+    <View>
+      <Text>{account.account_name}</Text>
+      <Text>Account Number: {account.account_num}</Text>
+      <Text>Balance: ${account.balance}</Text>
+    </View>
+  </Pressable>
+  ))}
 
     <StatusBar style="auto" />
   </View>
 );
+}
+
+else if (screen === 'account' && selectedAccount) {
+  return (
+    <View style={styles.container}>
+      <Text>Account Details</Text>
+
+      <Text>Available Balance</Text>
+      <Text>${selectedAccount.balance}</Text>
+
+      <Text>{selectedAccount.account_name}</Text>
+      <Text>Account Number:</Text>
+      <Text>{selectedAccount.account_num}</Text>
+
+      <Button
+      title="Send Money"
+      onPress={() => {}}
+      />
+
+      <Button
+      title="Transfer"
+      onPress={() => {}}
+      />
+
+      <Button
+        title="Back"
+        onPress={() => setScreen('home')}
+      />
+
+      <StatusBar style="auto" />
+    </View>
+  );
 }
 
 }
