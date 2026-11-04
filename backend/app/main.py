@@ -218,6 +218,7 @@ def send_money(request: TransferRequest):
                 SELECT id, balance
                 FROM accounts
                 WHERE id = :id
+                
                 """),
                 {
                 "id": request.sender_account_id
@@ -242,32 +243,38 @@ def send_money(request: TransferRequest):
                 )
 
             
-
-            
-            if sender["balance"] < request.amount:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Insufficient funds"
-                )
         
             recipient = recipient_result.mappings().first()
+            if recipient is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Recipient account not found"
+                    )
+
             if sender["id"] == recipient["id"]:
                 raise HTTPException(
-                status_code=400,
-                detail="Cannot send money to the same account"
-                )
+                    status_code=400,
+                    detail="Cannot send money to the same account"
+                    )
 
-            connection.execute(
+            update = connection.execute(
             text("""
             UPDATE accounts
             SET balance = balance - :amount
             WHERE id = :id
+            AND balance >= :amount
             """),
             {
             "amount": request.amount,
             "id": sender["id"]
             }
             )
+            
+            if update.rowcount == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Insufficient funds"
+                )
 
             connection.execute(
                     text("""
@@ -280,6 +287,8 @@ def send_money(request: TransferRequest):
                 "amount": request.amount
                 }
             )
+            
+            
 
             return {
             "message": "Transfer successful"
