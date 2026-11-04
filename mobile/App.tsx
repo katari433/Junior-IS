@@ -8,7 +8,7 @@ export default function App() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account' | 'sendMoney'>('register');
+  const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account' | 'sendMoney' | 'transfer'>('register');
   const [loggedInUserId, setLoggedInUserId] = useState<number | null>(null);
   const [loggedInFirstName, setLoggedInFirstName] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -372,7 +372,7 @@ else if (screen === 'account' && selectedAccount) {
 
       <Button
       title="Transfer"
-      onPress={() => {}}
+      onPress={() => setScreen('transfer')}
       />
 
       <Button
@@ -410,6 +410,55 @@ else if (screen === 'sendMoney' && selectedAccount) {
 
       <Button
         title="Send"
+        onPress={handleTransfer}
+      />
+
+      <Button
+        title="Back"
+        onPress={() => setScreen('account')}
+      />
+
+      <StatusBar style="auto" />
+    </View>
+  );
+}
+
+else if (screen === 'transfer' && selectedAccount) {
+  return (
+    <View style={styles.container}>
+      <Text>Transfer Money</Text>
+
+      <Text>From:</Text>
+      <Text>{selectedAccount.account_name}</Text>
+      <Text>Balance: ${selectedAccount.balance}</Text>
+
+      <Text>Transfer To:</Text>
+
+      {accounts
+        .filter((account: any) => account.id !== selectedAccount.id)
+        .map((account: any) => (
+          <Button
+            key={account.id}
+            title={`${account.account_name} - ${account.account_num}`}
+            onPress={() => {
+              setRecipientAccount(account.account_num);
+            }}
+          />
+        ))}
+
+      <TextInput
+        value={sendingAmount}
+        onChangeText={(text) => {
+          const digitsOnly = text.replace(/\D/g, '');
+          setSendingAmount(
+            (Number(digitsOnly) / 100).toFixed(2)
+          );
+        }}
+        keyboardType="number-pad"
+      />
+
+      <Button
+        title="Transfer"
         onPress={handleTransfer}
       />
 
