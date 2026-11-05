@@ -8,15 +8,14 @@ export default function App() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account' | 'sendMoney' | 'transfer'>('register');
+  const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account' | 'sendMoney' | 'transfer' | 'history' >('register');
   const [loggedInUserId, setLoggedInUserId] = useState<number | null>(null);
   const [loggedInFirstName, setLoggedInFirstName] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [recipientAccount, setRecipientAccount] = useState('');
   const [sendingAmount, setSendingAmount] = useState('0.00');
-  const [amountDigits, setAmountDigits] = useState('');
-  const formattedAmount = (Number(amountDigits || '0') / 100).toFixed(2);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   
   async function displayAccounts(userId: number) {
@@ -238,11 +237,38 @@ async function handleTransfer() {
   }
 }
 
+async function displayTransactionHistory(accountId: number) {
+  try {
+    const response = await fetch('http://localhost:8000/transactionHistory', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        bank_account_id: accountId
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      Alert.alert('Error', data.detail);
+      return;
+    }
+
+    setTransactions(data.transactions ?? []);
+    setScreen('history');
+
+  } catch (error) {
+    console.log(error);
+    Alert.alert('Error', 'Could not load transaction history.');
+  }
+}
 
 
 
 
-  if (screen === 'login') {
+if (screen === 'login') {
   return (
     <View style={styles.container}>
       <Text>Login Screen</Text>
@@ -268,9 +294,10 @@ async function handleTransfer() {
       <StatusBar style="auto" />
     </View>
   );
-  }
+}
 
-  else if(screen === 'register'){
+
+else if(screen === 'register'){
   return (
     <View style={styles.container}>
       <Text>Create Account</Text>
@@ -366,13 +393,18 @@ else if (screen === 'account' && selectedAccount) {
       <Text>{selectedAccount.account_num}</Text>
 
       <Button
-      title="Send Money"
-      onPress={() => setScreen('sendMoney')}
+        title="Send Money"
+        onPress={() => setScreen('sendMoney')}
       />
 
       <Button
-      title="Transfer"
-      onPress={() => setScreen('transfer')}
+        title="Transfer"
+        onPress={() => setScreen('transfer')}
+      />
+
+      <Button
+        title="Transaction History"
+        onPress={() => displayTransactionHistory(selectedAccount.id)}
       />
 
       <Button
@@ -461,6 +493,46 @@ else if (screen === 'transfer' && selectedAccount) {
         title="Transfer"
         onPress={handleTransfer}
       />
+
+      <Button
+        title="Back"
+        onPress={() => setScreen('account')}
+      />
+
+      <StatusBar style="auto" />
+    </View>
+  );
+}
+
+else if (screen === 'history' && selectedAccount) {
+  return (
+    <View style={styles.container}>
+      <Text>Transaction History</Text>
+      <Text>{selectedAccount.account_name}</Text>
+
+      {transactions.length === 0 ? (
+        <Text>No transactions yet.</Text>
+      ) : (
+        transactions.map((transaction: any) => (
+          <View key={transaction.id}>
+            <Text>
+              {transaction.sender_account_id === selectedAccount.id
+              ? `-$${transaction.amount}`
+              : `+$${transaction.amount}`}
+            </Text>
+
+            <Text>
+              Date: {new Date(transaction.created_at).toLocaleDateString()}
+            </Text>
+
+            <Text>
+              Time: {new Date(transaction.created_at).toLocaleTimeString()}
+            </Text>
+
+            
+          </View>
+        ))
+      )}
 
       <Button
         title="Back"
