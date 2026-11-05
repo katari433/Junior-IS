@@ -35,6 +35,9 @@ class TransferRequest(BaseModel):
     recipient_account_num: str
     amount: Decimal
 
+class TransactionHistoryRequest(BaseModel):
+     bank_account_id: int
+
 @app.get("/")
 def root():
     return {"message": "Banking backend is running"}
@@ -287,12 +290,55 @@ def send_money(request: TransferRequest):
                 "amount": request.amount
                 }
             )
-            
-            
 
+            connection.execute(
+                text("""
+                    INSERT INTO transactions (
+                    sender_account_id,
+                    recipient_account_id,
+                    amount
+                    )
+                    VALUES (
+                    :sender_account_id,
+                    :recipient_account_id,
+                    :amount
+                    )
+                    """),
+                    {
+                    "sender_account_id": sender["id"],
+                    "recipient_account_id": recipient["id"],
+                    "amount": request.amount
+                    }
+                )
+            
+        
             return {
             "message": "Transfer successful"
             }
+
+
+
+@app.post("/transactionHistory")
+def transaction_history(request: TransactionHistoryRequest):
+    with engine.connect() as connection:
+        result = connection.execute(
+            text("""
+            SELECT id, sender_account_id, recipient_account_id, amount, created_at
+            FROM transactions
+            WHERE sender_account_id = :bank_account_id
+            OR recipient_account_id = :bank_account_id
+            ORDER BY created_at DESC
+            """),
+            {
+                "bank_account_id": request.bank_account_id
+            }
+        )
+
+        transactions = result.mappings().all()
+
+        return {
+            "transactions": transactions
+        }
 
     
            
