@@ -1,6 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, Button, Alert, Pressable } from 'react-native';
+import { Text, View, TextInput, Button, Alert, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
+import styles from './styles';
 
 
 export default function App() {
@@ -8,7 +10,7 @@ export default function App() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account' | 'sendMoney' | 'transfer' | 'history' >('register');
+  const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account' | 'sendMoney' | 'transfer' | 'history' >('login');
   const [loggedInUserId, setLoggedInUserId] = useState<number | null>(null);
   const [loggedInFirstName, setLoggedInFirstName] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -270,288 +272,467 @@ async function displayTransactionHistory(accountId: number) {
 
 if (screen === 'login') {
   return (
-    <View style={styles.container}>
-      <Text>Login Screen</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.authContainer}>
+        <Text style={styles.appTitle}>Banking App</Text>
+        <Text style={styles.authTitle}>Welcome Back</Text>
+        <Text style={styles.authSubtitle}>
+          Log in to access your accounts
+        </Text>
 
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"/>
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry/>
-      <Button
-      title='Login'
-      onPress={handleLogin}/>
-      <Text>Don't have an account?</Text>
-      <Button
-      title='Create an account'
-      onPress={() => setScreen('register')}/>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#6b7280"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#6b7280"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+
+        <Pressable
+          style={styles.primaryButton}
+          onPress={handleLogin}
+        >
+          <Text style={styles.primaryButtonText}>Login</Text>
+        </Pressable>
+
+        <Text style={styles.authQuestion}>
+          Don't have an account?
+        </Text>
+
+        <Pressable onPress={() => setScreen('register')}>
+          <Text style={styles.linkText}>Create an account</Text>
+        </Pressable>
+      </View>
+
       <StatusBar style="auto" />
-    </View>
+    </SafeAreaView>
   );
 }
 
 
 else if(screen === 'register'){
   return (
-    <View style={styles.container}>
-      <Text>Create Account</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.authContainer}>
+        <Text style={styles.appTitle}>Banking App</Text>
+        <Text style={styles.authTitle}>Create An Account</Text>
+        <Text style={styles.authSubtitle}>Register Now To Started</Text>
 
-      <TextInput
-       placeholder="First Name"
-       value={firstName}
-       onChangeText={setFirstName} />
-      <TextInput
-       placeholder="Last Name"
-       value={lastName}
-       onChangeText={setLastName}/>
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"/>
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry/>
-      <Button
-      title='Create Account'
-      onPress={handleCreateAccount}/>
-      <Text>Already have an account?</Text>
-      <Button
-      title='Login'
-      onPress={() => setScreen('login')}/>
+        <TextInput
+          style={styles.input}
+          placeholder="First Name"
+          placeholderTextColor="#6b7280"
+          value={firstName}
+          onChangeText={setFirstName} 
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Last Name"
+          placeholderTextColor="#6b7280"
+          value={lastName}
+          onChangeText={setLastName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#6b7280"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#6b7280"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <Pressable
+          style={styles.primaryButton}
+          onPress={handleCreateAccount}
+        >
+          <Text style={styles.primaryButtonText}>Create Account</Text>  
+        </Pressable>
+
+        <Text style={styles.authQuestion}>Already have an account?</Text>
+        <Pressable onPress={() => setScreen('login')}>
+          <Text style={styles.linkText}>Login</Text>
+        </Pressable>
+      </View>
       <StatusBar style="auto" />
-    </View>
+    </SafeAreaView>
   );
 }
 
 else if (screen === 'home') {
   if (accounts.length === 0) {
     return (
-      <View style={styles.container}>
-        <Text>Welcome, {loggedInFirstName}</Text>
-        <Text>You have no bank accounts, create one now.</Text>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.dashboardContainer}>
+          <Text style={styles.dashboardWelcome}>
+            Welcome, {loggedInFirstName}
+          </Text>
 
-        <Button
-          title="Open Checking Account"
-          onPress={() => handleCreateNewAccount('Checking')}
-        />
+          <Text style={styles.dashboardSubtitle}>
+            You have no bank accounts yet.
+          </Text>
 
-        <Button
-          title="Open Savings Account"
-          onPress={() => handleCreateNewAccount('Savings')}
-        />
+          <Pressable
+            style={styles.primaryButton}
+            onPress={() => handleCreateNewAccount('Checking')}
+          >
+            <Text style={styles.primaryButtonText}>
+              Open Checking Account
+            </Text>
+          </Pressable>
 
-        <StatusBar style="auto" />
-      </View>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => handleCreateNewAccount('Savings')}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Open Savings Account
+            </Text>
+          </Pressable>
+        </View>
+
+        <StatusBar style="light" />
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-    <Text>Welcome, {loggedInFirstName}</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.dashboardContainer}>
+        <Text style={styles.dashboardWelcome}>
+          Welcome, {loggedInFirstName}
+        </Text>
 
-    {accounts.map((account: any) => (
-    <Pressable
-      key={account.id}
-      onPress={() => {
-        setSelectedAccount(account);
-        setScreen('account');
-      }}
-    >
-    <View>
-      <Text>{account.account_name}</Text>
-      <Text>Account Number: {account.account_num}</Text>
-      <Text>Balance: ${account.balance}</Text>
-    </View>
-  </Pressable>
-  ))}
+        <Text style={styles.dashboardSubtitle}>
+          Your Accounts
+        </Text>
 
-    <StatusBar style="auto" />
-  </View>
-);
+        {accounts.map((account: any) => (
+          <Pressable
+            key={account.id}
+            style={styles.accountCard}
+            onPress={() => {
+              setSelectedAccount(account);
+              setScreen('account');
+            }}
+          >
+            <View style={styles.accountCardTop}>
+              <Text style={styles.accountName}>
+                {account.account_name}
+              </Text>
+              
+              <Text style={styles.accountNumber}>
+                {account.account_num}
+              </Text> 
+            </View>
+
+            <Text style={styles.accountCardsubtext}>
+                Available Balance:
+              </Text>
+
+              <Text style={styles.accountBalance}>
+                ${Number(account.balance).toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </Text>
+            
+          </Pressable>
+        ))}
+      </View>
+
+      <StatusBar style="light" />
+    </SafeAreaView>
+  );
 }
 
 else if (screen === 'account' && selectedAccount) {
   return (
-    <View style={styles.container}>
-      <Text>Account Details</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.screenContent}>
+        <Text style={styles.screenTitle}>Account Details</Text>
 
-      <Text>Available Balance</Text>
-      <Text>${selectedAccount.balance}</Text>
+        <View style={styles.infoCard}>
+          <View style={styles.accountDetailRow}>
+            <Text style={styles.infoText}>
+              {selectedAccount.account_name}
+            </Text>
 
-      <Text>{selectedAccount.account_name}</Text>
-      <Text>Account Number:</Text>
-      <Text>{selectedAccount.account_num}</Text>
+            <Text style={styles.accountNumberValue}>
+              {selectedAccount.account_num}
+            </Text>
+          </View>
 
-      <Button
-        title="Send Money"
-        onPress={() => setScreen('sendMoney')}
-      />
+          <View style={styles.accountDetailRow}>
+            <Text style={styles.label}>
+              Available Balance
+            </Text>
 
-      <Button
-        title="Transfer"
-        onPress={() => setScreen('transfer')}
-      />
+            <Text style={styles.value}>
+              ${selectedAccount.balance}
+            </Text>
+          </View>
+        </View>
 
-      <Button
-        title="Transaction History"
-        onPress={() => displayTransactionHistory(selectedAccount.id)}
-      />
+        <Pressable
+          style={styles.actionButton}
+          onPress={() => setScreen('sendMoney')}
+        >
+          <Text style={styles.actionButtonText}>Send Money</Text>
+        </Pressable>
 
-      <Button
-        title="Back"
-        onPress={() => setScreen('home')}
-      />
+        <Pressable
+          style={styles.actionButton}
+          onPress={() => setScreen('transfer')}
+        >
+          <Text style={styles.actionButtonText}>Transfer</Text>
+        </Pressable>
 
-      <StatusBar style="auto" />
-    </View>
+        <Pressable
+          style={styles.outlineButton}
+          onPress={() => displayTransactionHistory(selectedAccount.id)}
+        >
+          <Text style={styles.outlineButtonText}>
+            Transaction History
+          </Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.outlineButton}
+          onPress={() => setScreen('home')}
+        >
+          <Text style={styles.outlineButtonText}>Back</Text>
+        </Pressable>
+      </View>
+
+      <StatusBar style="light" />
+    </SafeAreaView>
   );
 }
 
 else if (screen === 'sendMoney' && selectedAccount) {
   return (
-    <View style={styles.container}>
-      <Text>Send Money</Text>
-      <Text>From: {selectedAccount.account_name}</Text>
-      <Text>Balance: ${selectedAccount.balance}</Text>
-      <Text>Reciepient Account Number:</Text>
-      <TextInput
-        placeholder="Recipient Account Number"
-        value={recipientAccount}
-        onChangeText={setRecipientAccount}
-        keyboardType="number-pad"
-      />
+    <SafeAreaView style={styles.container}>
+      <View style={styles.screenContent}>
+        <Text style={styles.screenTitle}>Send Money</Text>
 
-      <TextInput
-        value={sendingAmount}
-        onChangeText={(text) => {
-        const digitsOnly = text.replace(/\D/g, '');
-          setSendingAmount((Number(digitsOnly) / 100).toFixed(2));
-      }}
-      keyboardType="number-pad"
-      />
+        <View style={styles.infoCard}>
+          <Text style={styles.label}>From</Text>
+          <Text style={styles.infoText}>
+            {selectedAccount.account_name}
+          </Text>
 
-      <Button
-        title="Send"
-        onPress={handleTransfer}
-      />
+          <Text style={styles.label}>Available Balance</Text>
+          <Text style={styles.value}>
+            ${selectedAccount.balance}
+          </Text>
+        </View>
 
-      <Button
-        title="Back"
-        onPress={() => setScreen('account')}
-      />
+        <Text style={styles.formLabel}>
+          Recipient Account Number
+        </Text>
 
-      <StatusBar style="auto" />
-    </View>
+        <TextInput
+          style={styles.input}
+          placeholder="10-digit account number"
+          placeholderTextColor="#6b7370"
+          value={recipientAccount}
+          onChangeText={setRecipientAccount}
+          keyboardType="number-pad"
+        />
+
+        <Text style={styles.formLabel}>Amount</Text>
+
+        <TextInput
+          style={styles.moneyInput}
+          value={sendingAmount}
+          onChangeText={(text) => {
+            const digitsOnly = text.replace(/\D/g, '');
+            setSendingAmount(
+              (Number(digitsOnly) / 100).toFixed(2)
+            );
+          }}
+          keyboardType="number-pad"
+        />
+
+        <Pressable
+          style={styles.actionButton}
+          onPress={handleTransfer}
+        >
+          <Text style={styles.actionButtonText}>Send Money</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.outlineButton}
+          onPress={() => setScreen('account')}
+        >
+          <Text style={styles.outlineButtonText}>Back</Text>
+        </Pressable>
+      </View>
+
+      <StatusBar style="light" />
+    </SafeAreaView>
   );
 }
 
 else if (screen === 'transfer' && selectedAccount) {
   return (
-    <View style={styles.container}>
-      <Text>Transfer Money</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.screenContent}>
+        <Text style={styles.screenTitle}>Transfer Money</Text>
 
-      <Text>From:</Text>
-      <Text>{selectedAccount.account_name}</Text>
-      <Text>Balance: ${selectedAccount.balance}</Text>
+        <View style={styles.infoCard}>
+          <Text style={styles.label}>From</Text>
 
-      <Text>Transfer To:</Text>
+          <Text style={styles.infoText}>
+            {selectedAccount.account_name}
+          </Text>
 
-      {accounts
-        .filter((account: any) => account.id !== selectedAccount.id)
-        .map((account: any) => (
-          <Button
-            key={account.id}
-            title={`${account.account_name} - ${account.account_num}`}
-            onPress={() => {
-              setRecipientAccount(account.account_num);
-            }}
-          />
-        ))}
+          <Text style={styles.label}>Available Balance</Text>
 
-      <TextInput
-        value={sendingAmount}
-        onChangeText={(text) => {
-          const digitsOnly = text.replace(/\D/g, '');
-          setSendingAmount(
-            (Number(digitsOnly) / 100).toFixed(2)
-          );
-        }}
-        keyboardType="number-pad"
-      />
+          <Text style={styles.value}>
+            ${selectedAccount.balance}
+          </Text>
+        </View>
 
-      <Button
-        title="Transfer"
-        onPress={handleTransfer}
-      />
+        <Text style={styles.formLabel}>Transfer To</Text>
 
-      <Button
-        title="Back"
-        onPress={() => setScreen('account')}
-      />
+        {accounts
+          .filter((account: any) => account.id !== selectedAccount.id)
+          .map((account: any) => (
+            <Pressable
+              key={account.id}
+              style={styles.outlineButton}
+              onPress={() => {
+                setRecipientAccount(account.account_num);
+              }}
+            >
+              <Text style={styles.outlineButtonText}>
+                {account.account_name} - {account.account_num}
+              </Text>
+            </Pressable>
+          ))}
 
-      <StatusBar style="auto" />
-    </View>
+        <Text style={styles.formLabel}>Amount</Text>
+
+        <TextInput
+          style={styles.moneyInput}
+          value={sendingAmount}
+          onChangeText={(text) => {
+            const digitsOnly = text.replace(/\D/g, '');
+
+            setSendingAmount(
+              (Number(digitsOnly) / 100).toFixed(2)
+            );
+          }}
+          keyboardType="number-pad"
+        />
+
+        <Pressable
+          style={styles.actionButton}
+          onPress={handleTransfer}
+        >
+          <Text style={styles.actionButtonText}>Transfer</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.outlineButton}
+          onPress={() => setScreen('account')}
+        >
+          <Text style={styles.outlineButtonText}>Back</Text>
+        </Pressable>
+      </View>
+
+      <StatusBar style="light" />
+    </SafeAreaView>
   );
 }
 
 else if (screen === 'history' && selectedAccount) {
   return (
-    <View style={styles.container}>
-      <Text>Transaction History</Text>
-      <Text>{selectedAccount.account_name}</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.screenContent}>
+        <Text style={styles.screenTitle}>Transaction History</Text>
 
-      {transactions.length === 0 ? (
-        <Text>No transactions yet.</Text>
-      ) : (
-        transactions.map((transaction: any) => (
-          <View key={transaction.id}>
-            <Text>
-              {transaction.sender_account_id === selectedAccount.id
-              ? `-$${transaction.amount}`
-              : `+$${transaction.amount}`}
-            </Text>
+        <Text style={styles.dashboardSubtitle}>
+          {selectedAccount.account_name}
+        </Text>
 
-            <Text>
-              Date: {new Date(transaction.created_at).toLocaleDateString()}
-            </Text>
+        {transactions.length === 0 ? (
+          <Text style={styles.dashboardSubtitle}>
+            No transactions yet.
+          </Text>
+        ) : (
+          transactions.map((transaction: any) => (
+            <View
+              key={transaction.id}
+              style={styles.transactionCard}
+            >
+              <View style={styles.transactionTopRow}>
+                <Text style={styles.transactionInfo}>
+                  {new Date(transaction.created_at + 'Z')
+                    .toLocaleDateString('en-CA', {
+                      timeZone: 'America/New_York',
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                    })
+                    .replaceAll('-', '/')} •{' '}
+                  {new Date(transaction.created_at + 'Z')
+                    .toLocaleTimeString('en-US', {
+                      timeZone: 'America/New_York',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false,
+                    })}
+                </Text>
 
-            <Text>
-              Time: {new Date(transaction.created_at).toLocaleTimeString()}
-            </Text>
+                <Text style={styles.transactionAmount}>
+                  {transaction.sender_account_id === selectedAccount.id
+                    ? `-$${transaction.amount}`
+                    : `+$${transaction.amount}`}
+                </Text>
+              </View>
 
-            
-          </View>
-        ))
-      )}
+              <Text style={styles.transactionType}>
+                {transaction.sender_account_id === selectedAccount.id
+                  ? 'Sent'
+                  : 'Received'}
+              </Text>
+            </View>
+          ))
+        )}
 
-      <Button
-        title="Back"
-        onPress={() => setScreen('account')}
-      />
+        <Pressable
+          style={styles.outlineButton}
+          onPress={() => setScreen('account')}
+        >
+          <Text style={styles.outlineButtonText}>Back</Text>
+        </Pressable>
+      </View>
 
-      <StatusBar style="auto" />
-    </View>
+      <StatusBar style="light" />
+    </SafeAreaView>
   );
 }
 
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
 
