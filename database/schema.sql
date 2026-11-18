@@ -40,6 +40,10 @@ CREATE TABLE fraud_flags (
     id INT AUTO_INCREMENT PRIMARY KEY,
     transaction_id INT NOT NULL,
     rule_triggered VARCHAR(100) NOT NULL,
+    review_status VARCHAR(20) NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 );
+
+ALTER TABLE fraud_flags
+ADD COLUMN review_status VARCHAR(20) NOT NULL DEFAULT 'pending';

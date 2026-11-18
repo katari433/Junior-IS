@@ -41,6 +41,11 @@ class TransactionHistoryRequest(BaseModel):
 class AdminRequest(BaseModel):
     user_id: int
 
+class FraudReviewRequest(BaseModel):
+    user_id: int
+    fraud_flag_id: int
+    review_status: str
+
 @app.get("/")
 def root():
     return {"message": "Banking backend is running"}
@@ -548,6 +553,7 @@ def fraud_flags(request: AdminRequest):
             SELECT fraud_flags.id,
                    fraud_flags.transaction_id,
                    fraud_flags.rule_triggered,
+                   fraud_flags.review_status,
                    fraud_flags.created_at,
                    transactions.sender_account_id,
                    transactions.recipient_account_id,
@@ -564,5 +570,54 @@ def fraud_flags(request: AdminRequest):
         return {
             "flags": flags
         }
-    
+
+@app.post("/reviewFraudFlag")
+def review_fraud_flag(request: FraudReviewRequest):
+    with engine.begin() as connection:
+        admin_result = connection.execute(
+            text("""
+            SELECT role
+            FROM users
+            WHERE id = :user_id
+            """),
+            {
+                "user_id": request.user_id
+            }
+        )
+
+        admin = admin_result.mappings().first()
+
+        if admin is None or admin["role"] != "admin":
+            raise HTTPException(
+                status_code=403,
+                detail="Admin access required"
+            )
+
+        if request.review_status not in ["fraud", "legitimate"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid review status"
+            )
+
+        result = connection.execute(
+            text("""
+            UPDATE fraud_flags
+            SET review_status = :review_status
+            WHERE id = :fraud_flag_id
+            """),
+            {
+                "review_status": request.review_status,
+                "fraud_flag_id": request.fraud_flag_id
+            }
+        )
+
+        if result.rowcount == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Fraud flag not found"
+            )
+
+        return {
+            "message": "Fraud flag reviewed successfully"
+        }   
            
