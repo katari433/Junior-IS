@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { Text, View, TextInput, Button, Alert, Pressable } from 'react-native';
+import { Text, View, TextInput, Button, Alert, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import styles from './styles';
@@ -329,6 +329,33 @@ async function displayAuditLogs() {
   }
 }
 
+async function reviewFraudFlag(fraudFlagId: number, reviewStatus: string) {
+  try {
+    const response = await fetch('http://localhost:8000/reviewFraudFlag', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: loggedInUserId,
+        fraud_flag_id: fraudFlagId,
+        review_status: reviewStatus,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      Alert.alert('Error', data.detail);
+      return;
+    }
+
+    await displayFraudFlags();
+  } catch (error) {
+    console.log(error);
+    Alert.alert('Error', 'Could not review fraud flag.');
+  }
+}
 
 
 
@@ -833,6 +860,10 @@ else if (screen === 'admin') {
 else if (screen === 'auditLogs') {
   return (
     <SafeAreaView style={styles.container}>
+      <ScrollView
+        style={{ width: '100%' }}
+        contentContainerStyle={{ alignItems: 'center' }}
+      >
       <View style={styles.screenContent}>
         <Text style={styles.screenTitle}>Audit Logs</Text>
 
@@ -867,7 +898,7 @@ else if (screen === 'auditLogs') {
           <Text style={styles.outlineButtonText}>Back</Text>
         </Pressable>
       </View>
-
+      </ScrollView>
       <StatusBar style="dark" />
     </SafeAreaView>
   );
@@ -876,6 +907,8 @@ else if (screen === 'auditLogs') {
 else if (screen === 'fraudReview') {
   return (
     <SafeAreaView style={styles.container}>
+      <ScrollView style={{ width: '100%' }}
+        contentContainerStyle={{ alignItems: 'center' }}>
       <View style={styles.screenContent}>
         <Text style={styles.screenTitle}>Fraud Review</Text>
 
@@ -903,7 +936,36 @@ else if (screen === 'fraudReview') {
               <Text style={styles.transactionInfo}>
                 Recipient Account ID: {flag.recipient_account_id}
               </Text>
+
+              <Text style={styles.transactionInfo}>
+                Status: {flag.review_status}
+              </Text>
+
+              {flag.review_status === 'pending' && (
+                <>
+                  <Pressable
+                    style={styles.actionButton}
+                    onPress={() => reviewFraudFlag(flag.id, 'fraud')}
+                  >
+                    <Text style={styles.actionButtonText}>
+                      Mark as Fraud
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.outlineButton}
+                    onPress={() =>
+                      reviewFraudFlag(flag.id, 'legitimate')
+                    }
+                  >
+                    <Text style={styles.outlineButtonText}>
+                      Mark as Legitimate
+                    </Text>
+                  </Pressable>
+                </>
+              )}
             </View>
+            
           ))
         )}
 
@@ -914,11 +976,10 @@ else if (screen === 'fraudReview') {
           <Text style={styles.outlineButtonText}>Back</Text>
         </Pressable>
       </View>
-
+      </ScrollView>
       <StatusBar style="dark" />
     </SafeAreaView>
   );
 }
 
 }
-
