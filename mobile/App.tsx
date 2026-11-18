@@ -20,6 +20,7 @@ export default function App() {
   const [sendingAmount, setSendingAmount] = useState('0.00');
   const [transactions, setTransactions] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [fraudFlags, setFraudFlags] = useState<any[]>([]);
 
   
   async function displayAccounts(userId: number) {
@@ -53,6 +54,33 @@ setAccounts(data.accounts ?? []);
   }
 
 
+}
+
+async function displayFraudFlags() {
+  try {
+    const response = await fetch('http://localhost:8000/fraudFlags', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: loggedInUserId
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      Alert.alert('Error', data.detail);
+      return;
+    }
+
+    setFraudFlags(data.flags ?? []);
+    setScreen('fraudReview');
+  } catch (error) {
+    console.log(error);
+    Alert.alert('Error', 'Could not load fraud flags.');
+  }
 }
 
 async function handleCreateNewAccount(accountName: string) {
@@ -789,7 +817,7 @@ else if (screen === 'admin') {
 
         <Pressable
           style={styles.outlineButton}
-          onPress={() => {}}
+          onPress={displayFraudFlags}
         >
           <Text style={styles.outlineButtonText}>
             Fraud Review
@@ -827,6 +855,53 @@ else if (screen === 'auditLogs') {
 
               <Text style={styles.transactionInfo}>
                 {log.details}
+              </Text>
+            </View>
+          ))
+        )}
+
+        <Pressable
+          style={styles.outlineButton}
+          onPress={() => setScreen('admin')}
+        >
+          <Text style={styles.outlineButtonText}>Back</Text>
+        </Pressable>
+      </View>
+
+      <StatusBar style="dark" />
+    </SafeAreaView>
+  );
+}
+
+else if (screen === 'fraudReview') {
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.screenContent}>
+        <Text style={styles.screenTitle}>Fraud Review</Text>
+
+        {fraudFlags.length === 0 ? (
+          <Text style={styles.dashboardSubtitle}>
+            No flagged transactions.
+          </Text>
+        ) : (
+          fraudFlags.map((flag: any) => (
+            <View key={flag.id} style={styles.transactionCard}>
+              <View style={styles.transactionTopRow}>
+                <Text style={styles.infoText}>
+                  ${flag.amount}
+                </Text>
+
+                <Text style={styles.transactionInfo}>
+                  {flag.rule_triggered}
+                </Text>
+              </View>
+
+              <Text style={styles.transactionInfo}>
+                Sender Account ID: {flag.sender_account_id}
+              </Text>
+
+              <Text style={styles.transactionInfo}>
+                Recipient Account ID: {flag.recipient_account_id}
               </Text>
             </View>
           ))

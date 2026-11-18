@@ -336,7 +336,7 @@ def send_money(request: TransferRequest):
                 }
             )
 
-            connection.execute(
+            transaction_result = connection.execute(
                 text("""
                     INSERT INTO transactions (
                     sender_account_id,
@@ -349,12 +349,64 @@ def send_money(request: TransferRequest):
                     :amount
                     )
                     """),
-                    {
+                {
                     "sender_account_id": sender["id"],
                     "recipient_account_id": recipient["id"],
                     "amount": request.amount
-                    }
+                }
             )
+
+            transaction_id = transaction_result.lastrowid
+
+            if request.amount >= Decimal("5000.00"):
+                connection.execute(
+                    text("""
+                    INSERT INTO fraud_flags (
+                        transaction_id,
+                        rule_triggered
+                    )
+                    VALUES (
+                        :transaction_id,
+                        :rule_triggered
+                    )
+                    """),
+                    {
+                        "transaction_id": transaction_id,
+                        "rule_triggered": "HIGH_VALUE_TRANSFER"
+                    }
+                )
+
+            rapid_transfer_result = connection.execute(
+                text("""
+                SELECT COUNT(*)
+                FROM transactions
+                WHERE sender_account_id = :sender_account_id
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+                """),
+                {
+                    "sender_account_id": sender["id"]
+                }
+            )
+
+            rapid_transfer_count = rapid_transfer_result.scalar()
+
+            if rapid_transfer_count >= 3:
+                connection.execute(
+                    text("""
+                    INSERT INTO fraud_flags (
+                        transaction_id,
+                        rule_triggered
+                    )
+                    VALUES (
+                        :transaction_id,
+                        :rule_triggered
+                    )
+                    """),
+                    {
+                        "transaction_id": transaction_id,
+                        "rule_triggered": "RAPID_TRANSFERS"
+                    }
+                )
 
             connection.execute(
                 text("""
@@ -469,5 +521,48 @@ def audit_logs(request: AdminRequest):
             "logs": logs
         }
 
+@app.post("/fraudFlags")
+def fraud_flags(request: AdminRequest):
+    with engine.connect() as connection:
+        admin_result = connection.execute(
+            text("""
+            SELECT role
+            FROM users
+            WHERE id = :user_id
+            """),
+            {
+                "user_id": request.user_id
+            }
+        )
+
+        admin = admin_result.mappings().first()
+
+        if admin is None or admin["role"] != "admin":
+            raise HTTPException(
+                status_code=403,
+                detail="Admin access required"
+            )
+
+        result = connection.execute(
+            text("""
+            SELECT fraud_flags.id,
+                   fraud_flags.transaction_id,
+                   fraud_flags.rule_triggered,
+                   fraud_flags.created_at,
+                   transactions.sender_account_id,
+                   transactions.recipient_account_id,
+                   transactions.amount
+            FROM fraud_flags
+            JOIN transactions
+                ON fraud_flags.transaction_id = transactions.id
+            ORDER BY fraud_flags.created_at DESC
+            """)
+        )
+
+        flags = result.mappings().all()
+
+        return {
+            "flags": flags
+        }
     
            
