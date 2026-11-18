@@ -10,7 +10,8 @@ export default function App() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account' | 'sendMoney' | 'transfer' | 'history' >('login');
+  const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account' | 'sendMoney' | 'transfer' | 'history' | 'admin' | 'auditLogs' | 'fraudReview'>('login');
+  const [userRole, setuserRole] = useState('');
   const [loggedInUserId, setLoggedInUserId] = useState<number | null>(null);
   const [loggedInFirstName, setLoggedInFirstName] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -18,6 +19,7 @@ export default function App() {
   const [recipientAccount, setRecipientAccount] = useState('');
   const [sendingAmount, setSendingAmount] = useState('0.00');
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
   
   async function displayAccounts(userId: number) {
@@ -153,10 +155,15 @@ if(
   Alert.alert('Error', data.detail);
   return;
   }
+  setuserRole(data.role)
   setLoggedInUserId(data.user_id);
   setLoggedInFirstName(data.first_name)
-  await displayAccounts(data.user_id);
-  setScreen('home');
+  if (data.role === 'admin') {
+    setScreen('admin');
+  } else {
+    await displayAccounts(data.user_id);
+    setScreen('home');
+  }
 
  }
  catch (error) {
@@ -264,6 +271,33 @@ async function displayTransactionHistory(accountId: number) {
   } catch (error) {
     console.log(error);
     Alert.alert('Error', 'Could not load transaction history.');
+  }
+}
+
+async function displayAuditLogs() {
+  try {
+    const response = await fetch('http://localhost:8000/auditLogs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: loggedInUserId
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      Alert.alert('Error', data.detail);
+      return;
+    }
+
+    setAuditLogs(data.logs ?? []);
+    setScreen('auditLogs');
+  } catch (error) {
+    console.log(error);
+    Alert.alert('Error', 'Could not load audit logs.');
   }
 }
 
@@ -730,6 +764,83 @@ else if (screen === 'history' && selectedAccount) {
       </View>
 
       <StatusBar style="light" />
+    </SafeAreaView>
+  );
+}
+
+else if (screen === 'admin') {
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.screenContent}>
+        <Text style={styles.screenTitle}>Admin Dashboard</Text>
+
+        <Text style={styles.dashboardSubtitle}>
+          Welcome, {loggedInFirstName}
+        </Text>
+
+        <Pressable
+          style={styles.actionButton}
+          onPress={displayAuditLogs}
+        >
+          <Text style={styles.actionButtonText}>
+            View Audit Logs
+          </Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.outlineButton}
+          onPress={() => {}}
+        >
+          <Text style={styles.outlineButtonText}>
+            Fraud Review
+          </Text>
+        </Pressable>
+      </View>
+
+      <StatusBar style="dark" />
+    </SafeAreaView>
+  );
+}
+
+else if (screen === 'auditLogs') {
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.screenContent}>
+        <Text style={styles.screenTitle}>Audit Logs</Text>
+
+        {auditLogs.length === 0 ? (
+          <Text style={styles.dashboardSubtitle}>
+            No audit logs yet.
+          </Text>
+        ) : (
+          auditLogs.map((log: any) => (
+            <View key={log.id} style={styles.transactionCard}>
+              <View style={styles.transactionTopRow}>
+                <Text style={styles.infoText}>
+                  {log.first_name} {log.last_name}
+                </Text>
+
+                <Text style={styles.transactionInfo}>
+                  {log.action}
+                </Text>
+              </View>
+
+              <Text style={styles.transactionInfo}>
+                {log.details}
+              </Text>
+            </View>
+          ))
+        )}
+
+        <Pressable
+          style={styles.outlineButton}
+          onPress={() => setScreen('admin')}
+        >
+          <Text style={styles.outlineButtonText}>Back</Text>
+        </Pressable>
+      </View>
+
+      <StatusBar style="dark" />
     </SafeAreaView>
   );
 }

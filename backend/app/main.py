@@ -38,6 +38,9 @@ class TransferRequest(BaseModel):
 class TransactionHistoryRequest(BaseModel):
      bank_account_id: int
 
+class AdminRequest(BaseModel):
+    user_id: int
+
 @app.get("/")
 def root():
     return {"message": "Banking backend is running"}
@@ -96,7 +99,7 @@ def login_user(request: LoginRequest):
             result = connection.execute(
 
                 text("""
-                SELECT id, first_name, last_name, email, password_hash
+                SELECT id, first_name, last_name, email, password_hash, role
                 FROM users
                 WHERE email = :email
                             
@@ -128,10 +131,32 @@ def login_user(request: LoginRequest):
                 detail="Invalid Email or Password"
             )
 
+
+            connection.execute(
+                text("""
+                INSERT INTO audit_logs (
+                    user_id,
+                    action,
+                    details
+                )
+                VALUES (
+                    :user_id,
+                    :action,
+                    :details
+                )
+                """),
+                {
+                    "user_id": user["id"],
+                    "action": "LOGIN",
+                    "details": "User logged in successfully"
+                }
+            )
+
             return {
                 "message": "Login successful",
                 "user_id": user["id"],
-                "first_name": user["first_name"]
+                "first_name": user["first_name"],
+                "role": user["role"],
 
             }
 
@@ -190,6 +215,26 @@ def create_user_account(request: CreateAccountRequest):
             "balance": 0.00
             }
             )
+
+            connection.execute(
+                text("""
+                INSERT INTO audit_logs (
+                    user_id,
+                    action,
+                    details
+                )
+                VALUES (
+                    :user_id,
+                    :action,
+                    :details
+                )
+                """),
+                {
+                    "user_id": request.user_id,
+                    "action": "ACCOUNT_CREATED",
+                    "details": f"{request.account_name} account created"
+                }
+            )
         
             return {
                "message": "Account created successfully" 
@@ -218,7 +263,7 @@ def send_money(request: TransferRequest):
         with engine.begin() as connection:
             result = connection.execute(
                 text("""
-                SELECT id, balance
+                SELECT id, user_id, account_num, balance
                 FROM accounts
                 WHERE id = :id
                 
@@ -229,7 +274,7 @@ def send_money(request: TransferRequest):
             )
             recipient_result = connection.execute(
             text("""
-            SELECT id, balance
+            SELECT id, user_id, balance
             FROM accounts
             WHERE account_num = :account_num
             """),
@@ -309,7 +354,47 @@ def send_money(request: TransferRequest):
                     "recipient_account_id": recipient["id"],
                     "amount": request.amount
                     }
+            )
+
+            connection.execute(
+                text("""
+                INSERT INTO audit_logs (
+                    user_id,
+                    action,
+                    details
                 )
+                VALUES (
+                    :user_id,
+                    :action,
+                    :details
+                )
+                """),
+                {
+                    "user_id": sender["user_id"],
+                    "action": "TRANSFER_SENT",
+                    "details": f"Sent ${request.amount} to account {request.recipient_account_num}"
+                }
+            )
+
+            connection.execute(
+                text("""
+                INSERT INTO audit_logs (
+                    user_id,
+                    action,
+                    details
+                )
+                VALUES (
+                    :user_id,
+                    :action,
+                    :details
+                )
+                """),
+                {
+                    "user_id": recipient["user_id"],
+                    "action": "TRANSFER_RECEIVED",
+                    "details": f"Received ${request.amount} from account {sender['account_num']}"
+                }
+            )
             
         
             return {
@@ -338,6 +423,50 @@ def transaction_history(request: TransactionHistoryRequest):
 
         return {
             "transactions": transactions
+        }
+
+@app.post("/auditLogs")
+def audit_logs(request: AdminRequest):
+    with engine.connect() as connection:
+        admin_result = connection.execute(
+            text("""
+            SELECT role
+            FROM users
+            WHERE id = :user_id
+            """),
+            {
+                "user_id": request.user_id
+            }
+        )
+
+        admin = admin_result.mappings().first()
+
+        if admin is None or admin["role"] != "admin":
+            raise HTTPException(
+                status_code=403,
+                detail="Admin access required"
+            )
+
+        result = connection.execute(
+            text("""
+            SELECT audit_logs.id,
+                   audit_logs.user_id,
+                   users.first_name,
+                   users.last_name,
+                   audit_logs.action,
+                   audit_logs.details,
+                   audit_logs.created_at
+            FROM audit_logs
+            LEFT JOIN users
+                ON audit_logs.user_id = users.id
+            ORDER BY audit_logs.created_at DESC
+            """)
+        )
+
+        logs = result.mappings().all()
+
+        return {
+            "logs": logs
         }
 
     

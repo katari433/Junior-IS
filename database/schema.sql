@@ -15,3 +15,23 @@ CREATE TABLE accounts (
     FOREIGN KEY (user_id) REFERENCES users(id)
 
 );
+
+CREATE TABLE transactions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_account_id INT NOT NULL,
+    recipient_account_id INT NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_account_id) REFERENCES accounts(id),
+    FOREIGN KEY (recipient_account_id) REFERENCES accounts(id)
+);
+
+
+CREATE TABLE audit_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    action VARCHAR(100) NOT NULL,
+    details VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
