@@ -758,6 +758,8 @@ else if (screen === 'transfer' && selectedAccount) {
 else if (screen === 'history' && selectedAccount) {
   return (
     <SafeAreaView style={styles.container}>
+      <ScrollView style={{ width: '100%' }}
+        contentContainerStyle={{ alignItems: 'center' }}>
       <View style={styles.screenContent}>
         <Text style={styles.screenTitle}>Transaction History</Text>
 
@@ -817,7 +819,7 @@ else if (screen === 'history' && selectedAccount) {
           <Text style={styles.outlineButtonText}>Back</Text>
         </Pressable>
       </View>
-
+      </ScrollView>
       <StatusBar style="light" />
     </SafeAreaView>
   );
