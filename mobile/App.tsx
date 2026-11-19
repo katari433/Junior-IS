@@ -6,25 +6,37 @@ import styles from './styles';
 
 
 export default function App() {
+  // Registration and login form state
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Control the currently displayed screen
   const [screen, setScreen] = useState<'register' | 'login' | 'home' | 'account' | 'sendMoney' | 'transfer' | 'history' | 'admin' | 'auditLogs' | 'fraudReview'>('login');
+
+  // Store logged-in user information
   const [userRole, setuserRole] = useState('');
   const [loggedInUserId, setLoggedInUserId] = useState<number | null>(null);
   const [loggedInFirstName, setLoggedInFirstName] = useState('');
+
+  // Store bank accounts and the selected account
   const [accounts, setAccounts] = useState<any[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
+
+  // Transfer form state
   const [recipientAccount, setRecipientAccount] = useState('');
   const [sendingAmount, setSendingAmount] = useState('0.00');
+
+  // Store transaction history and administrative records
   const [transactions, setTransactions] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [fraudFlags, setFraudFlags] = useState<any[]>([]);
 
-  
+
+  // Retrieve bank accounts associated with a user
   async function displayAccounts(userId: number) {
-  
+
     try{
         const response = await fetch('http://localhost:8000/findAccount', {
         method: 'POST',
@@ -40,14 +52,15 @@ export default function App() {
   const data = await response.json();
 
 if (!response.ok) {
-  
+
   Alert.alert('Error', 'Could not load accounts.');
   return;
 }
 
+// Update the stored account list
 setAccounts(data.accounts ?? []);
- 
-  
+
+
 }catch (error) {
     console.log(error);
     Alert.alert('Error', 'Could not connect to the backend.');
@@ -56,6 +69,7 @@ setAccounts(data.accounts ?? []);
 
 }
 
+// Retrieve flagged transactions for administrative review
 async function displayFraudFlags() {
   try {
     const response = await fetch('http://localhost:8000/fraudFlags', {
@@ -83,6 +97,7 @@ async function displayFraudFlags() {
   }
 }
 
+// Create a new checking or savings account
 async function handleCreateNewAccount(accountName: string) {
   try {
     const response = await fetch('http://localhost:8000/createAccount', {
@@ -103,6 +118,7 @@ async function handleCreateNewAccount(accountName: string) {
       return;
     }
 
+    // Refresh accounts after creation
     await displayAccounts(loggedInUserId!);
 
     Alert.alert('Success', data.message);
@@ -112,7 +128,9 @@ async function handleCreateNewAccount(accountName: string) {
   }
 }
 
+// Register a new user
 async function handleCreateAccount() {
+  // Check for missing registration fields
   if (
     firstName.trim() === '' ||
     lastName.trim() === '' ||
@@ -146,6 +164,7 @@ if (!response.ok) {
 
 
 
+// Clear registration fields after success
 setFirstName('');
 setLastName('');
 setEmail('');
@@ -158,7 +177,9 @@ Alert.alert('Success', data.message);
   }
 }
 
+// Authenticate a user
 async function handleLogin() {
+// Check for missing login credentials
 if(
   email.trim() === '' ||
   password.length === 0 
@@ -183,9 +204,13 @@ if(
   Alert.alert('Error', data.detail);
   return;
   }
+
+  // Store authenticated user information
   setuserRole(data.role)
   setLoggedInUserId(data.user_id);
   setLoggedInFirstName(data.first_name)
+
+  // Display the dashboard based on the user's role
   if (data.role === 'admin') {
     setScreen('admin');
   } else {
@@ -202,7 +227,9 @@ if(
 
 }
 
+// Validate and submit a money transfer
 async function handleTransfer() {
+  // Check for missing transfer fields
   if (
     recipientAccount.trim() === '' ||
     sendingAmount.trim() === ''
@@ -211,21 +238,25 @@ async function handleTransfer() {
     return;
   }
 
+  // Validate account number length
   if (recipientAccount.length !== 10) {
     Alert.alert('Error', 'Account number must be 10 digits.');
     return;
   }
 
+  // Ensure the account number contains only digits
   if (!/^\d+$/.test(recipientAccount)) {
     Alert.alert('Error', 'Account number must contain only numbers.');
     return;
   }
 
+  // Prevent transfers to the same account
   if (recipientAccount === selectedAccount.account_num) {
     Alert.alert('Error', 'Cannot send money to the same account.');
     return;
   }
 
+  // Validate the transfer amount
   if (isNaN(Number(sendingAmount))) {
     Alert.alert('Error', 'Please enter a valid amount.');
     return;
@@ -236,11 +267,13 @@ async function handleTransfer() {
     return;
   }
 
+  // Check the displayed account balance
   if (Number(sendingAmount) > Number(selectedAccount.balance)) {
     Alert.alert('Error', 'Insufficient funds.');
     return;
   }
 
+  // Submit the transfer to the backend
   try {
     const response = await fetch('http://localhost:8000/sendMoney', {
       method: 'POST',
@@ -260,9 +293,12 @@ async function handleTransfer() {
       Alert.alert('Error', data.detail);
       return;
     }
+
+    // Reset transfer fields
     setRecipientAccount('');
     setSendingAmount('0.00');
 
+    // Refresh account balances
     await displayAccounts(loggedInUserId!);
 
     setScreen('home');
@@ -274,6 +310,7 @@ async function handleTransfer() {
   }
 }
 
+// Retrieve the selected account's transaction history
 async function displayTransactionHistory(accountId: number) {
   try {
     const response = await fetch('http://localhost:8000/transactionHistory', {
@@ -302,6 +339,7 @@ async function displayTransactionHistory(accountId: number) {
   }
 }
 
+// Retrieve audit logs for the administrator
 async function displayAuditLogs() {
   try {
     const response = await fetch('http://localhost:8000/auditLogs', {
@@ -329,6 +367,7 @@ async function displayAuditLogs() {
   }
 }
 
+// Submit an administrator's fraud review decision
 async function reviewFraudFlag(fraudFlagId: number, reviewStatus: string) {
   try {
     const response = await fetch('http://localhost:8000/reviewFraudFlag', {
@@ -350,6 +389,7 @@ async function reviewFraudFlag(fraudFlagId: number, reviewStatus: string) {
       return;
     }
 
+    // Refresh fraud flags after review
     await displayFraudFlags();
   } catch (error) {
     console.log(error);
@@ -359,6 +399,7 @@ async function reviewFraudFlag(fraudFlagId: number, reviewStatus: string) {
 
 
 
+// Login screen
 if (screen === 'login') {
   return (
     <SafeAreaView style={styles.container}>
@@ -410,6 +451,7 @@ if (screen === 'login') {
 }
 
 
+// Registration screen
 else if(screen === 'register'){
   return (
     <SafeAreaView style={styles.container}>
@@ -466,7 +508,9 @@ else if(screen === 'register'){
   );
 }
 
+// Customer dashboard
 else if (screen === 'home') {
+  // Display account creation options when no accounts exist
   if (accounts.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
@@ -503,6 +547,7 @@ else if (screen === 'home') {
     );
   }
 
+  // Display existing bank accounts
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.dashboardContainer}>
@@ -514,6 +559,7 @@ else if (screen === 'home') {
           Your Accounts
         </Text>
 
+        {/* Generate a card for each bank account */}
         {accounts.map((account: any) => (
           <Pressable
             key={account.id}
@@ -527,7 +573,7 @@ else if (screen === 'home') {
               <Text style={styles.accountName}>
                 {account.account_name}
               </Text>
-              
+
               <Text style={styles.accountNumber}>
                 {account.account_num}
               </Text> 
@@ -537,13 +583,14 @@ else if (screen === 'home') {
                 Available Balance:
               </Text>
 
+              {/* Format the balance to two decimal places */}
               <Text style={styles.accountBalance}>
                 ${Number(account.balance).toLocaleString('en-US', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
               </Text>
-            
+
           </Pressable>
         ))}
       </View>
@@ -553,6 +600,7 @@ else if (screen === 'home') {
   );
 }
 
+// Account details screen
 else if (screen === 'account' && selectedAccount) {
   return (
     <SafeAreaView style={styles.container}>
@@ -581,6 +629,7 @@ else if (screen === 'account' && selectedAccount) {
           </View>
         </View>
 
+        {/* Account actions */}
         <Pressable
           style={styles.actionButton}
           onPress={() => setScreen('sendMoney')}
@@ -617,6 +666,7 @@ else if (screen === 'account' && selectedAccount) {
   );
 }
 
+// Send money to another bank account
 else if (screen === 'sendMoney' && selectedAccount) {
   return (
     <SafeAreaView style={styles.container}>
@@ -654,6 +704,7 @@ else if (screen === 'sendMoney' && selectedAccount) {
           style={styles.moneyInput}
           value={sendingAmount}
           onChangeText={(text) => {
+            // Convert entered digits into a monetary amount
             const digitsOnly = text.replace(/\D/g, '');
             setSendingAmount(
               (Number(digitsOnly) / 100).toFixed(2)
@@ -682,6 +733,7 @@ else if (screen === 'sendMoney' && selectedAccount) {
   );
 }
 
+// Transfer money between the user's own accounts
 else if (screen === 'transfer' && selectedAccount) {
   return (
     <SafeAreaView style={styles.container}>
@@ -704,6 +756,7 @@ else if (screen === 'transfer' && selectedAccount) {
 
         <Text style={styles.formLabel}>Transfer To</Text>
 
+        {/* Exclude the sender from recipient options */}
         {accounts
           .filter((account: any) => account.id !== selectedAccount.id)
           .map((account: any) => (
@@ -726,6 +779,7 @@ else if (screen === 'transfer' && selectedAccount) {
           style={styles.moneyInput}
           value={sendingAmount}
           onChangeText={(text) => {
+            // Convert entered digits into a monetary amount
             const digitsOnly = text.replace(/\D/g, '');
 
             setSendingAmount(
@@ -755,11 +809,14 @@ else if (screen === 'transfer' && selectedAccount) {
   );
 }
 
+// Transaction history screen
 else if (screen === 'history' && selectedAccount) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={{ width: '100%' }}
-        contentContainerStyle={{ alignItems: 'center' }}>
+        contentContainerStyle={{ alignItems: 'center',
+        paddingTop: 100,
+        paddingBottom: 30, }}>
       <View style={styles.screenContent}>
         <Text style={styles.screenTitle}>Transaction History</Text>
 
@@ -767,6 +824,7 @@ else if (screen === 'history' && selectedAccount) {
           {selectedAccount.account_name}
         </Text>
 
+        {/* Display transactions or an empty history message */}
         {transactions.length === 0 ? (
           <Text style={styles.dashboardSubtitle}>
             No transactions yet.
@@ -778,6 +836,7 @@ else if (screen === 'history' && selectedAccount) {
               style={styles.transactionCard}
             >
               <View style={styles.transactionTopRow}>
+                {/* Display timestamps in Eastern Time */}
                 <Text style={styles.transactionInfo}>
                   {new Date(transaction.created_at + 'Z')
                     .toLocaleDateString('en-CA', {
@@ -796,6 +855,7 @@ else if (screen === 'history' && selectedAccount) {
                     })}
                 </Text>
 
+                {/* Display outgoing and incoming amounts */}
                 <Text style={styles.transactionAmount}>
                   {transaction.sender_account_id === selectedAccount.id
                     ? `-$${transaction.amount}`
@@ -825,6 +885,7 @@ else if (screen === 'history' && selectedAccount) {
   );
 }
 
+// Administrator dashboard
 else if (screen === 'admin') {
   return (
     <SafeAreaView style={styles.container}>
@@ -859,16 +920,20 @@ else if (screen === 'admin') {
   );
 }
 
+// Audit logs screen
 else if (screen === 'auditLogs') {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
         style={{ width: '100%' }}
-        contentContainerStyle={{ alignItems: 'center' }}
-      >
+        contentContainerStyle={{ alignItems: 'center',
+        paddingTop: 100,
+        paddingBottom: 30, }}
+          >
       <View style={styles.screenContent}>
         <Text style={styles.screenTitle}>Audit Logs</Text>
 
+        {/* Display recorded user actions */}
         {auditLogs.length === 0 ? (
           <Text style={styles.dashboardSubtitle}>
             No audit logs yet.
@@ -906,14 +971,18 @@ else if (screen === 'auditLogs') {
   );
 }
 
+// Fraud review screen
 else if (screen === 'fraudReview') {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={{ width: '100%' }}
-        contentContainerStyle={{ alignItems: 'center' }}>
+        contentContainerStyle={{ alignItems: 'center',
+        paddingTop: 100,
+        paddingBottom: 30, }}>
       <View style={styles.screenContent}>
         <Text style={styles.screenTitle}>Fraud Review</Text>
 
+        {/* Display flagged transactions and their review status */}
         {fraudFlags.length === 0 ? (
           <Text style={styles.dashboardSubtitle}>
             No flagged transactions.
@@ -943,6 +1012,7 @@ else if (screen === 'fraudReview') {
                 Status: {flag.review_status}
               </Text>
 
+              {/* Allow review only for pending flags */}
               {flag.review_status === 'pending' && (
                 <>
                   <Pressable
@@ -967,7 +1037,7 @@ else if (screen === 'fraudReview') {
                 </>
               )}
             </View>
-            
+
           ))
         )}
 

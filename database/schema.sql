@@ -1,3 +1,4 @@
+-- Store user information and hashed passwords
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
@@ -6,6 +7,7 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL
 );
 
+-- Store bank accounts and their balances
 CREATE TABLE accounts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     account_num CHAR(10) NOT NULL UNIQUE,
@@ -16,6 +18,7 @@ CREATE TABLE accounts (
 
 );
 
+-- Record transfers between bank accounts
 CREATE TABLE transactions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sender_account_id INT NOT NULL,
@@ -27,6 +30,7 @@ CREATE TABLE transactions (
 );
 
 
+-- Record user actions for auditing
 CREATE TABLE audit_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -36,6 +40,7 @@ CREATE TABLE audit_logs (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Store flagged transactions and their review status
 CREATE TABLE fraud_flags (
     id INT AUTO_INCREMENT PRIMARY KEY,
     transaction_id INT NOT NULL,
@@ -45,5 +50,6 @@ CREATE TABLE fraud_flags (
     FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 );
 
+-- Add review status to an existing fraud flags table
 ALTER TABLE fraud_flags
 ADD COLUMN review_status VARCHAR(20) NOT NULL DEFAULT 'pending';
