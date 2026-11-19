@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
+  // Main application layout
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
@@ -8,6 +9,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  // Authentication screen layout and headings
   authContainer: {
     width: '85%',
   },
@@ -33,6 +35,7 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
 
+  // Standard text input
   input: {
     width: '100%',
     height: 50,
@@ -46,6 +49,7 @@ const styles = StyleSheet.create({
     color: '#111111',
   },
 
+  // Primary button styling
   primaryButton: {
     width: '100%',
     height: 50,
@@ -62,6 +66,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Authentication navigation text
   authQuestion: {
     textAlign: 'center',
     marginTop: 25,
@@ -75,6 +80,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Dashboard layout and headings
   dashboardContainer: {
     width: '88%',
   },
@@ -91,7 +97,8 @@ const styles = StyleSheet.create({
     color: '#555555',
     marginBottom: 12,
   },
-  
+
+  // Bank account card layout
   accountCardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -133,6 +140,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
 
+  // Secondary button styling
   secondaryButton: {
     width: '100%',
     height: 50,
@@ -151,6 +159,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Shared screen layout and title
   screenContent: {
     width: '88%',
   },
@@ -162,6 +171,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
+  // Account information card
   infoCard: {
     width: '100%',
     backgroundColor: '#ffffff',
@@ -191,6 +201,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
 
+  // Transfer form styling
   formLabel: {
     fontSize: 15,
     color: '#333333',
@@ -210,6 +221,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
 
+  // Action button styling
   actionButton: {
     width: '100%',
     height: 50,
@@ -226,6 +238,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Outlined button styling
   outlineButton: {
     width: '100%',
     height: 50,
@@ -244,6 +257,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Transaction, audit log, and fraud flag styling
   transactionCard: {
     width: '100%',
     paddingVertical: 16,
@@ -274,6 +288,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
+  // Account details layout
   accountDetailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

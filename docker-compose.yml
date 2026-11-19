@@ -1,4 +1,5 @@
 services:
+  # MySQL database service
   db:
     image: mysql:8.4
     env_file:
@@ -8,19 +9,25 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
+  # FastAPI backend service
   backend:
     build:
       context: ./backend
     ports:
       - "8000:8000"
+
+    # Database connection settings
     environment:
       DB_HOST: db
       DB_PORT: 3306
       DB_NAME: ${MYSQL_DATABASE}
       DB_USER: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
+
+    # Start the database container before the backend
     depends_on:
       - db
 
+# Persist database data across container restarts
 volumes:
   mysql_data:

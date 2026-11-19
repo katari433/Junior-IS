@@ -9,10 +9,12 @@ from decimal import Decimal
 from .database import engine
 
 
+# Initialize FastAPI and password hashing
 app = FastAPI()
 password_hash = PasswordHash.recommended()
 
 
+# Request models for API input validation
 class RegistrationRequest(BaseModel):
     first_name: str
     last_name: str
@@ -30,6 +32,7 @@ class CreateAccountRequest(BaseModel):
     user_id: int
     account_name: str
 
+# Use Decimal for monetary amounts
 class TransferRequest(BaseModel):
     sender_account_id: int
     recipient_account_num: str
@@ -46,11 +49,13 @@ class FraudReviewRequest(BaseModel):
     fraud_flag_id: int
     review_status: str
 
+# Check backend status
 @app.get("/")
 def root():
     return {"message": "Banking backend is running"}
 
 
+# Test the database connection
 @app.get("/db-test")
 def test_database():
     with engine.connect() as connection:
@@ -61,6 +66,7 @@ def test_database():
             "result": result.scalar()
         }
 
+# Register a user and store their hashed password
 @app.post("/register")
 def register_user(request: RegistrationRequest):
     try:
@@ -92,12 +98,14 @@ def register_user(request: RegistrationRequest):
             "message": "User created successfully",
         }
 
+    # Handle duplicate email registration
     except IntegrityError:
         raise HTTPException(
         status_code=409,
         detail="A user with that email already exists"
     )
 
+# Authenticate a user by email and password
 @app.post("/login")
 def login_user(request: LoginRequest):
     with engine.begin() as connection:
@@ -107,26 +115,28 @@ def login_user(request: LoginRequest):
                 SELECT id, first_name, last_name, email, password_hash, role
                 FROM users
                 WHERE email = :email
-                            
+
                 """),
                                 {
                 "email": request.email
                }
-             
+
             )
             user = result.mappings().first()
 
+            # Check whether the user exists
             if user is None:
                 raise HTTPException(
                     status_code=401,
                     detail= "Invalid Email or Password"
                 )
-        
+
             password_hash.verify(
                 request.password,
                 user["password_hash"]
                 )
 
+            # Verify the password against the stored hash
             if not password_hash.verify(
             request.password,
             user["password_hash"]
@@ -137,6 +147,7 @@ def login_user(request: LoginRequest):
             )
 
 
+            # Log successful authentication
             connection.execute(
                 text("""
                 INSERT INTO audit_logs (
@@ -165,6 +176,7 @@ def login_user(request: LoginRequest):
 
             }
 
+# Retrieve all accounts associated with a user ID
 @app.post("/findAccount")
 def find_user_account(request: AccountRequest):
     with engine.connect() as connection:
@@ -174,12 +186,12 @@ def find_user_account(request: AccountRequest):
                 SELECT id, account_num, user_id, account_name, balance
                 FROM accounts
                 WHERE user_id = :user_id
-                            
+
                 """),
                                 {
                 "user_id": request.user_id
                }
-             
+
             )
             accounts = result.mappings().all()
 
@@ -188,14 +200,16 @@ def find_user_account(request: AccountRequest):
                    "message": "no accounts", 
                    "accounts": []
                 }
-        
+
             return {
                 "accounts": accounts
 
             }
 
+# Create a bank account with an initial balance of zero
 @app.post("/createAccount")
 def create_user_account(request: CreateAccountRequest):
+    # Generate a random 10-digit account number
     account_num = str(random.randint(1000000000, 9999999999))
     with engine.begin() as connection:
             result = connection.execute(
@@ -221,6 +235,7 @@ def create_user_account(request: CreateAccountRequest):
             }
             )
 
+            # Log account creation
             connection.execute(
                 text("""
                 INSERT INTO audit_logs (
@@ -240,43 +255,51 @@ def create_user_account(request: CreateAccountRequest):
                     "details": f"{request.account_name} account created"
                 }
             )
-        
+
             return {
                "message": "Account created successfully" 
             }
 
+# Validate and process money transfers
 @app.post("/sendMoney")
 def send_money(request: TransferRequest):
+        # Validate the transfer amount
         if request.amount <= 0:
             raise HTTPException(
             status_code=400,
             detail="Amount must be greater than zero"
         )
 
+        # Validate the account number length
         if len(request.recipient_account_num) != 10:
             raise HTTPException(
                 status_code=400,
                 detail="Account number must be 10 digits"
             )
-        
+
+        # Validate the account number format
         if not request.recipient_account_num.isdigit():
             raise HTTPException(
                 status_code=400,
                 detail="Account number must contain only numbers"
                 )
-        
+
+        # Process the transfer within a database transaction
         with engine.begin() as connection:
+            # Retrieve the sender account
             result = connection.execute(
                 text("""
                 SELECT id, user_id, account_num, balance
                 FROM accounts
                 WHERE id = :id
-                
+
                 """),
                 {
                 "id": request.sender_account_id
                 }      
             )
+
+            # Retrieve the recipient account
             recipient_result = connection.execute(
             text("""
             SELECT id, user_id, balance
@@ -288,6 +311,7 @@ def send_money(request: TransferRequest):
             }
             )
 
+            # Check whether the sender account exists
             sender = result.mappings().first()
             if sender is None:
                 raise HTTPException(
@@ -295,8 +319,9 @@ def send_money(request: TransferRequest):
                     detail="Sender account not found"
                 )
 
-            
-        
+
+
+            # Check whether the recipient account exists
             recipient = recipient_result.mappings().first()
             if recipient is None:
                 raise HTTPException(
@@ -304,12 +329,14 @@ def send_money(request: TransferRequest):
                     detail="Recipient account not found"
                     )
 
+            # Prevent transfers to the same account
             if sender["id"] == recipient["id"]:
                 raise HTTPException(
                     status_code=400,
                     detail="Cannot send money to the same account"
                     )
 
+            # Deduct funds only if the balance is sufficient
             update = connection.execute(
             text("""
             UPDATE accounts
@@ -322,13 +349,15 @@ def send_money(request: TransferRequest):
             "id": sender["id"]
             }
             )
-            
+
+            # Reject the transfer if the deduction fails
             if update.rowcount == 0:
                 raise HTTPException(
                     status_code=400,
                     detail="Insufficient funds"
                 )
 
+            # Credit the recipient account
             connection.execute(
                     text("""
                     UPDATE accounts
@@ -341,6 +370,7 @@ def send_money(request: TransferRequest):
                 }
             )
 
+            # Record the transfer in the transactions table
             transaction_result = connection.execute(
                 text("""
                     INSERT INTO transactions (
@@ -361,8 +391,10 @@ def send_money(request: TransferRequest):
                 }
             )
 
+            # Retrieve the newly created transaction ID
             transaction_id = transaction_result.lastrowid
 
+            # Flag transfers of $5,000 or more
             if request.amount >= Decimal("5000.00"):
                 connection.execute(
                     text("""
@@ -381,6 +413,7 @@ def send_money(request: TransferRequest):
                     }
                 )
 
+            # Count outgoing transfers in the last 10 minutes
             rapid_transfer_result = connection.execute(
                 text("""
                 SELECT COUNT(*)
@@ -395,6 +428,7 @@ def send_money(request: TransferRequest):
 
             rapid_transfer_count = rapid_transfer_result.scalar()
 
+            # Flag three or more transfers within 10 minutes
             if rapid_transfer_count >= 3:
                 connection.execute(
                     text("""
@@ -413,6 +447,7 @@ def send_money(request: TransferRequest):
                     }
                 )
 
+            # Log the outgoing transfer
             connection.execute(
                 text("""
                 INSERT INTO audit_logs (
@@ -433,6 +468,7 @@ def send_money(request: TransferRequest):
                 }
             )
 
+            # Log the incoming transfer
             connection.execute(
                 text("""
                 INSERT INTO audit_logs (
@@ -452,14 +488,15 @@ def send_money(request: TransferRequest):
                     "details": f"Received ${request.amount} from account {sender['account_num']}"
                 }
             )
-            
-        
+
+
             return {
             "message": "Transfer successful"
             }
 
 
 
+# Retrieve incoming and outgoing transactions
 @app.post("/transactionHistory")
 def transaction_history(request: TransactionHistoryRequest):
     with engine.connect() as connection:
@@ -482,9 +519,11 @@ def transaction_history(request: TransactionHistoryRequest):
             "transactions": transactions
         }
 
+# Retrieve audit logs
 @app.post("/auditLogs")
 def audit_logs(request: AdminRequest):
     with engine.connect() as connection:
+        # Retrieve the supplied user's role
         admin_result = connection.execute(
             text("""
             SELECT role
@@ -498,12 +537,14 @@ def audit_logs(request: AdminRequest):
 
         admin = admin_result.mappings().first()
 
+        # Require the administrator role
         if admin is None or admin["role"] != "admin":
             raise HTTPException(
                 status_code=403,
                 detail="Admin access required"
             )
 
+        # Join audit logs with user information
         result = connection.execute(
             text("""
             SELECT audit_logs.id,
@@ -526,9 +567,11 @@ def audit_logs(request: AdminRequest):
             "logs": logs
         }
 
+# Retrieve flagged transactions
 @app.post("/fraudFlags")
 def fraud_flags(request: AdminRequest):
     with engine.connect() as connection:
+        # Retrieve the supplied user's role
         admin_result = connection.execute(
             text("""
             SELECT role
@@ -542,12 +585,14 @@ def fraud_flags(request: AdminRequest):
 
         admin = admin_result.mappings().first()
 
+        # Require the administrator role
         if admin is None or admin["role"] != "admin":
             raise HTTPException(
                 status_code=403,
                 detail="Admin access required"
             )
 
+        # Join fraud flags with transaction details
         result = connection.execute(
             text("""
             SELECT fraud_flags.id,
@@ -571,9 +616,11 @@ def fraud_flags(request: AdminRequest):
             "flags": flags
         }
 
+# Review flagged transactions
 @app.post("/reviewFraudFlag")
 def review_fraud_flag(request: FraudReviewRequest):
     with engine.begin() as connection:
+        # Retrieve the supplied user's role
         admin_result = connection.execute(
             text("""
             SELECT role
@@ -587,18 +634,21 @@ def review_fraud_flag(request: FraudReviewRequest):
 
         admin = admin_result.mappings().first()
 
+        # Require the administrator role
         if admin is None or admin["role"] != "admin":
             raise HTTPException(
                 status_code=403,
                 detail="Admin access required"
             )
 
+        # Validate the requested review status
         if request.review_status not in ["fraud", "legitimate"]:
             raise HTTPException(
                 status_code=400,
                 detail="Invalid review status"
             )
 
+        # Update the fraud flag's review status
         result = connection.execute(
             text("""
             UPDATE fraud_flags
@@ -611,6 +661,7 @@ def review_fraud_flag(request: FraudReviewRequest):
             }
         )
 
+        # Check whether the update affected a row
         if result.rowcount == 0:
             raise HTTPException(
                 status_code=404,
@@ -619,5 +670,4 @@ def review_fraud_flag(request: FraudReviewRequest):
 
         return {
             "message": "Fraud flag reviewed successfully"
-        }   
-           
+        }
